@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('reference', 80)->unique();
             $table->bigInteger('amount_minor');
             $table->string('currency', 3)->default('USD');
-            $table->enum('status', ['pending', 'completed', 'declined'])->default('pending');
+            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
             $table->string('failure_reason')->nullable();
             $table->timestamps();
             $table->index(['user_id', 'status']);
