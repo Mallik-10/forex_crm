@@ -313,7 +313,7 @@ export default function Index({
         );
     };
 
-    // Automatically check each pending transfer once, 10 seconds
+    // Automatically check each pending transfer once, 100 seconds
     // after it appears on the page. Manual checks can happen earlier.
     useEffect(() => {
         for (const transfer of transferRows) {
@@ -346,58 +346,30 @@ export default function Index({
     }, [transfers?.data]);
 
     const handleSubmit = (event) => {
-        
         event.preventDefault();
 
-        
-const handleSubmit = (event) => {
-    event.preventDefault();
+        const amount = Number(data.amount);
+        const account = tradingAccounts.find(
+            (item) => String(item.id) === String(data.trading_account_id)
+        );
 
-    const amount = Number(data.amount);
-    const account = tradingAccounts.find(
-        (item) => String(item.id) === String(data.trading_account_id)
-    );
+        if (!account || !Number.isFinite(amount) || amount <= 0) {
+            return;
+        }
 
-    if (!account || !Number.isFinite(amount) || amount <= 0) {
-        return;
-    }
+        setFlowSnapshot({
+            walletAvailableMinor: Number(wallet?.available_balance_minor ?? 0),
+            walletReservedMinor: Number(wallet?.reserved_balance_minor ?? 0),
+            tradingBalanceMinor: Number(
+                account.balance_minor ?? account.provider_balance_minor ?? 0
+            ),
+            currency: account.currency || wallet?.currency || 'USD',
+        });
 
-    setFlowSnapshot({
-        walletAvailableMinor: Number(wallet?.available_balance_minor ?? 0),
-        walletReservedMinor: Number(wallet?.reserved_balance_minor ?? 0),
-        tradingBalanceMinor: Number(
-            account.balance_minor ?? account.provider_balance_minor ?? 0
-        ),
-        currency: account.currency || wallet?.currency || 'USD',
-    });
-
-    setFlowAmount(amount);
-    setFlowResult('processing');
-    setFlowActive(true);
-    setFlowRunId((id) => id + 1);
-
-    post('/transfers', {
-        preserveScroll: true,
-
-        onSuccess: (page) => {
-            const latestTransfer = page.props.transfers?.data?.[0];
-
-            setFlowResult(latestTransfer?.status ?? 'pending');
-            reset('amount');
-        },
-
-        onError: () => {
-            setFlowResult('failed');
-        },
-    });
-};
-
-
-        setFlowAmount(Number(data.amount));
+        setFlowAmount(amount);
         setFlowResult('processing');
         setFlowActive(true);
-        setFlowRunId(id => id + 1);
-
+        setFlowRunId((id) => id + 1);
 
         post('/transfers', {
             preserveScroll: true,
