@@ -12,27 +12,60 @@ use Exception;
 
 class TransferController extends Controller
 {
-    public function index(Request $request)
-    {
-        $user = $request->user();
+    
+public function index(
+    Request $request,
+    \App\Services\TradingSimulatorService $simulator
+) {
+    $user = $request->user();
 
-        $query = Transfer::where('user_id', $user->id)
-            ->with('tradingAccount')
-            ->latest();
+    $transfers = Transfer::where('user_id', $user->id)
+        ->with('tradingAccount')
+        ->latest()
+        ->when(
+            in_array($request->query('status'), [
+                'pending', 'completed', 'declined', 'failed'
+            ], true),
+            fn ($query) => $query->where('status', $request->query('status'))
+        )
+        ->paginate(10)
+        ->withQueryString();
 
-        // Server-side status filtering
-        if ($request->has('status') && in_array($request->status, ['pending', 'completed', 'declined'])) {
-            $query->where('status', $request->status);
-        }
+    $wallet = $user->wallet;
 
-        // Server-side pagination (10 per page)
-        $transfers = $query->paginate(10)->withQueryString();
+    $tradingAccounts = $user->tradingAccounts()
+        ->get()
+        ->map(function ($account) use ($simulator) {
+            $providerData = $simulator->getAccount(
+                (string) $account->account_id
+            );
 
-        return Inertia::render('Transfers/Index', [
-            'transfers' => $transfers,
-            'filters' => $request->only(['status']),
-        ]);
-    }
+            // Only use a real balance returned by the simulator.
+            $balanceMinor = isset($providerData['balance_minor'])
+                ? (int) $providerData['balance_minor']
+                : null;
+
+            return [
+                'id' => $account->id,
+                'account_id' => $account->account_id,
+                'currency' => $account->currency,
+                'balance_minor' => $balanceMinor,
+                'provider_balance_minor' => $balanceMinor,
+            ];
+        });
+
+    return Inertia::render('Transfers/Index', [
+        'transfers' => $transfers,
+        'filters' => $request->only(['status']),
+        'wallet' => $wallet ? [
+            'currency' => $wallet->currency,
+            'available_balance_minor' => (int) $wallet->available_balance_minor,
+            'reserved_balance_minor' => (int) $wallet->reserved_balance_minor,
+        ] : null,
+        'tradingAccounts' => $tradingAccounts,
+    ]);
+}
+
 
     public function store(Request $request, TransferService $transferService)
     {
@@ -61,6 +94,7 @@ class TransferController extends Controller
             );
 
             $message = match ($transfer->status) {
+                'failed' => 'Transfer definitively failed; the reserved funds were released.',
                 'completed' => 'Transfer confirmed successful.',
                 'declined' => 'Transfer was declined by provider.',
                 'pending' => 'Transfer timed out or is uncertain. Status is pending.',
@@ -82,6 +116,7 @@ class TransferController extends Controller
         $reconciled = $transferService->reconcileTransfer($transfer);
 
         $message = match ($reconciled->status) {
+            'failed' => 'Transfer definitively failed; the reserved funds were released.',
             'completed' => 'Transfer reconciled as completed.',
             'declined' => 'Transfer reconciled as declined.',
             'pending' => 'Provider status is still pending or unreachable.',

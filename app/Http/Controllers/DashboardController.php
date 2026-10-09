@@ -19,8 +19,9 @@ class DashboardController extends Controller
         // Fetch live balance from external trading provider simulator
         $providerBalanceMinor = null;
         if ($tradingAccount) {
-            $accountData = $simulator->fetchAccountBalance($tradingAccount->account_id);
-            $providerBalanceMinor = $accountData['balance_minor'] ?? null;
+            $providerBalanceMinor = $simulator->fetchAccountBalance(
+            $tradingAccount->account_id
+            );
         }
 
         // Recent transfers for dashboard widget

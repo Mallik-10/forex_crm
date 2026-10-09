@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
         TradingAccount::updateOrCreate(
             ['user_id' => $clientA->id],
             [
-                'account_id' => 'ACC-CLIENT-A',
+                'account_id' => '10001',
                 'currency' => 'USD',
             ]
         );
@@ -68,7 +68,7 @@ class DatabaseSeeder extends Seeder
         TradingAccount::updateOrCreate(
             ['user_id' => $clientB->id],
             [
-                'account_id' => 'ACC-CLIENT-B',
+                'account_id' => '20001',
                 'currency' => 'USD',
             ]
         );

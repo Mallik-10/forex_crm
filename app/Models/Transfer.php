@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Transfer extends Model
 {
+    
     protected $fillable = [
         'user_id',
         'trading_account_id',
         'reference',
         'amount_minor',
+        'currency',
         'status',
         'demo_mode',
+        'failure_reason',
     ];
 
     public function user(): BelongsTo

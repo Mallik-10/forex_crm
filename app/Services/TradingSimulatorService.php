@@ -12,8 +12,12 @@ class TradingSimulatorService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.trading_simulator.base_url', 'http://127.0.0.1:9001');
-        $this->apiKey = config('services.trading_simulator.api_key', 'local-demo-key');
+        $this->baseUrl = rtrim(
+            config('services.simulator.base_url', 'http://127.0.0.1:9001'),
+            '/'
+        );
+
+        $this->apiKey = config('services.simulator.api_key', 'local-demo-key');
     }
 
     /**
@@ -51,13 +55,14 @@ class TradingSimulatorService
     public function createTransfer(string $reference, string $accountId, int $amountMinor, string $currency = 'USD', string $demoMode = 'success'): Response
     {
         return Http::withToken($this->apiKey)
+            ->timeout(2)
             ->withHeaders(['x-demo-mode' => $demoMode])
             ->post("{$this->baseUrl}/transfers", [
                 'reference' => $reference,
                 'account_id' => $accountId,
                 'amount_minor' => $amountMinor,
                 'currency' => $currency,
-            ]);
+        ]);
     }
 
     /**
@@ -66,6 +71,7 @@ class TradingSimulatorService
     public function getTransfer(string $reference): array
     {
         $response = Http::withToken($this->apiKey)
+            ->timeout(2)
             ->get("{$this->baseUrl}/transfers/{$reference}");
 
         return $response->json();
