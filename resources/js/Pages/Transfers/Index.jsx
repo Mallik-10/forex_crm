@@ -331,7 +331,7 @@ export default function Index({
                 if (!autoCheckedIds.current.has(transfer.id)) {
                     checkStatus(transfer.id, true);
                 }
-            }, 10000);
+            }, 100000);
 
             timerRef.current.set(transfer.id, timer);
         }
